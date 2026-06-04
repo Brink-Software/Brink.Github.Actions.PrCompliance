@@ -142,5 +142,5 @@ outputs:
   watch-files-check:
     description: 'Result of check for watched files having been modified. True if no modifications found to watched files.'
 runs:
-  using: 'node16'
+  using: 'node24'
   main: 'dist/index.js'
