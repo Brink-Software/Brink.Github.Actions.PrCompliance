@@ -41,7 +41,6 @@ export async function checkIssueLabels(
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     const result = (await client.graphql(
       `
         query ($owner: String!, $pull: Int!, $repo: String!) {
