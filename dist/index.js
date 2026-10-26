@@ -247,6 +247,7 @@ const github = __importStar(__nccwpck_require__(3228));
 const utils_1 = __nccwpck_require__(8006);
 const checks_1 = __nccwpck_require__(7943);
 const check_issue_labels_1 = __nccwpck_require__(2384);
+const user_is_team_member_1 = __nccwpck_require__(3453);
 const repoToken = core.getInput('repo-token');
 const ignoreAuthors = core.getMultilineInput('ignore-authors');
 const ignoreTeamMembers = core.getBooleanInput('ignore-team-members');
@@ -288,7 +289,7 @@ async function run() {
             escapeChecks(true, 'PR is by ignored author, skipping checks, setting all outputs to true.');
             return;
         }
-        const isTeamMember = await userIsTeamMember(author, repoOwner);
+        const isTeamMember = await (0, user_is_team_member_1.userIsTeamMember)(client, author, repoOwner);
         if (ignoreTeamMembers && isTeamMember) {
             escapeChecks(true, 'PR is by team member, skipping checks, setting all outputs to true.');
             return;
@@ -449,17 +450,73 @@ async function updateReview(pullRequest, body) {
         return;
     }
 }
-async function userIsTeamMember(login, owner) {
+run();
+
+
+/***/ }),
+
+/***/ 3453:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.userIsTeamMember = userIsTeamMember;
+const core = __importStar(__nccwpck_require__(7484));
+async function userIsTeamMember(client, login, owner) {
     if (login === owner)
         return true;
-    const { data: userOrgs } = await client.request('GET /users/{user}/orgs', {
-        user: login
-    });
-    return userOrgs.some((userOrg) => {
-        return userOrg.login === owner;
-    });
+    try {
+        const { data: userOrgs } = await client.request('GET /users/{user}/orgs', {
+            user: login
+        });
+        return userOrgs.some((userOrg) => {
+            return userOrg.login === owner;
+        });
+    }
+    catch (error) {
+        // Bot authors such as the Copilot coding agent have no user profile, so
+        // the lookup returns 404. Treat them as non-members and run the checks.
+        if (error.status === 404) {
+            core.info(`User ${login} not found, treating as non-team member.`);
+            return false;
+        }
+        throw error;
+    }
 }
-run();
 
 
 /***/ }),

@@ -3,6 +3,7 @@ import * as github from '@actions/github'
 import {context} from '@actions/github/lib/utils'
 import {checkBody, checkTitle, checkBranch} from './checks'
 import {checkIssueLabels} from './check-issue-labels'
+import {userIsTeamMember} from './user-is-team-member'
 
 type PullRequestReview = {
   id: number
@@ -69,7 +70,7 @@ async function run(): Promise<void> {
       )
       return
     }
-    const isTeamMember = await userIsTeamMember(author, repoOwner)
+    const isTeamMember = await userIsTeamMember(client, author, repoOwner)
     if (ignoreTeamMembers && isTeamMember) {
       escapeChecks(
         true,
@@ -256,14 +257,5 @@ async function updateReview(
     })
     return
   }
-}
-async function userIsTeamMember(login: string, owner: string) {
-  if (login === owner) return true
-  const {data: userOrgs} = await client.request('GET /users/{user}/orgs', {
-    user: login
-  })
-  return userOrgs.some((userOrg: {login: string}) => {
-    return userOrg.login === owner
-  })
 }
 run()
